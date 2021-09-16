@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: lchook
+spec:
+  containers:
+  - name: lchook-container
+    image: lchook:v1
+    lifecycle:
+      postStart:
+        exec:
+          command: ["/bin/sh", "-c", "echo Hello from the postStart handler >> /opt/data/pwmessage ; echo Hello postStart"]
+      preStop:
+        exec:
+          command: ["/bin/sh", "-c", "echo Hello from the preStop handler >> /opt/data/pwmessage ; do sleep 5; done"]
+    volumeMounts:
+    - mountPath: /opt/data
+      name: data-volume
+  volumes:
+  - name: data-volume
+    hostPath:
+      # directory location on host
+      path: /tmp/data
+
