@@ -62,3 +62,63 @@ This will make the Service to select this newly active pod as backend POD and st
 
 Meanwhile, the replicaset will detect the POD going down and create a new POD to make sure there are 2 replicas always running.
 This new POD will have label role as standby.
+
+
+Steps of exection:
+------------------
+
+We need following:
+
+- Application POD with a container which listens on a UDP port to receive the "become-active" notification from custom controller.
+- The POD contains multiple containers with some of them having environment variable "pwcriticality" set to "critical". 
+- Custom controller binary (or docker image) which will run on the host (or as a POD inside the cluster).
+- Replicaset and Service yaml files with appropriate labels and selectors.
+
+-> The replicaset and service are defined in the replicaset1.yaml and service1.yaml files.
+-> The udp_server_go.go file contains the application code compiled into the binary "goudps".
+   This binary is then used to create a container image "mygoudpsrv:v1" as defined in the file ActiveStandbySingletonPod/Dockerfile.
+-> The main.go and podcontroller.go files contain the custom controller logic to manage the labels of the PODs.
+-> The lifecyclecontainer/ directory contains the executable "lifecycle" generated using the C file lifecyclehook.c.
+   This program keeps looking for a file /tmp/killme every 5 seconds and crashes itself when it finds the file.
+   This executable is then used to create a container image "lchook:v1" using the Dockerfile file in the same directory.
+-> Both the above container images, mygoudpsrv:v1 and lchook:v1 are then used for creating containers in the pod definition given
+   in the file replicaset1.yaml file.
+   Both the containers have the env variable "pwcriticality" set to "critical" so as to test the scenario where POD should get restarted
+   if a critical container dies.
+
+
+
+To build docker images:
+-----------------------
+
+cd ActiveStandbySingletonPod/udpsrv
+go build // This will build the goudps binary.
+
+cd ActiveStandbySingletonPod/
+docker build . -t mygoudpsrv:v1 // This will create the container image and make it available on local machine.
+
+cd ActiveStandbySingletonPod/lifecyclecontainer/
+docker build . -t lchook:v1
+
+
+To compile the custom controller binary:
+----------------------------------------
+
+// The below command will create the binary "ccpod" in the same directory. Check file go.mod.
+cd ActiveStandbySingletonPod/
+go build
+
+// We can then run the ./ccpod binary on the host machine itself.
+
+
+
+// If required, we can also run it as a pod in the cluster by making a container image out of it.
+// In that case, we need to define role and rolebinding in the "default" namespace for the "default" service account.
+// e.g.
+
+// create rbac
+kubectl create role poddeploy --resource pods,deployments --verb list
+
+// create role binding for above role and associate it with the "default" service account of the "default" namespace:
+kubectl create rolebinding poddep --role poddeploy --serviceaccount default:default
+
