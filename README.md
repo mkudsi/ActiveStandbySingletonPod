@@ -74,13 +74,18 @@ We need following:
 - Custom controller binary (or docker image) which will run on the host (or as a POD inside the cluster).
 - Replicaset and Service yaml files with appropriate labels and selectors.
 
+
 -> The replicaset and service are defined in the replicaset1.yaml and service1.yaml files.
+
 -> The udp_server_go.go file contains the application code compiled into the binary "goudps".
    This binary is then used to create a container image "mygoudpsrv:v1" as defined in the file ActiveStandbySingletonPod/Dockerfile.
+
 -> The main.go and podcontroller.go files contain the custom controller logic to manage the labels of the PODs.
+
 -> The lifecyclecontainer/ directory contains the executable "lifecycle" generated using the C file lifecyclehook.c.
    This program keeps looking for a file /tmp/killme every 5 seconds and crashes itself when it finds the file.
    This executable is then used to create a container image "lchook:v1" using the Dockerfile file in the same directory.
+
 -> Both the above container images, mygoudpsrv:v1 and lchook:v1 are then used for creating containers in the pod definition given
    in the file replicaset1.yaml file.
    Both the containers have the env variable "pwcriticality" set to "critical" so as to test the scenario where POD should get restarted
