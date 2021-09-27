@@ -6,8 +6,9 @@ To create a singleton active POD which has a passive (not receiving/handling any
 Due to time critical functionality being executed in the active POD, can't rely on K8s to create a new POD and get the application initialization done within milliseconds. 
 Hence, need to keep a standby POD ready beforehand so that the failover happens quite fast.
 
-
-
+Also, want to nominate certain containers as critical containers and others as non-critical containers.
+If a critical container dies, then the POD needs to be restarted as the initialization of the critical POD is expected to take a lot of time and we better failover
+to the standby POD which is ready to become active.
 
 
 
@@ -16,6 +17,10 @@ Solution:
 
 The application is running as a singleton POD and is actively receiving traffic via a ClusterIP service.
 There is another POD running the same application but working in standby mode. It is not receiving any traffic as it is not a backend pod of the service.
+
+Since labels and annotations apply to the entire POD and not to containers within it, I am using environment variable to mark containers as critical or non-critical.
+The env variable "pwcriticality" with a value "critical" determines a critical container.
+
 
 Replicaset:
 -----------
