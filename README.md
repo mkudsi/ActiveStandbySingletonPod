@@ -110,7 +110,9 @@ To compile the custom controller binary:
 ----------------------------------------
 
 // The below command will create the binary "ccpod" in the same directory. Check file go.mod.
+
 cd ActiveStandbySingletonPod/
+
 go build
 
 // We can then run the ./ccpod binary on the host machine itself.
