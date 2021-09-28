@@ -126,12 +126,18 @@ To run the custom controller as a pod in the cluster:
 // In that case, we need to define clusterrole and clusterrolebinding in the "default" namespace for the "default" service account.
 // e.g.
 
+
 kubectl create serviceaccount -n default ccpod-sa --dry-run=client -oyaml > ccpod_sa.yaml
+
 kubectl create clusterrole ccpod-cr --resource=service,pod --verb=list,watch,create,get,update --dry-run=client -oyaml > ccpod_cr.yaml
+
 kubectl create clusterrolebinding ccpod-crb --clusterrole ccpod-cr --serviceaccount default:ccpod-sa --dry-run=client -oyaml > ccpod_crb.yaml
 
+
 kubectl create -f ccpod_sa.yaml
+
 kubectl create -f ccpod_cr.yaml
+
 kubectl create -f ccpod_crb.yaml
 
 Now, in the container spec in the pod/deployment/replicaset yaml file, specify the service account name:
