@@ -116,14 +116,29 @@ go build
 // We can then run the ./ccpod binary on the host machine itself.
 
 
+To run the custom controller as a pod in the cluster:
+-----------------------------------------------------
 
-// If required, we can also run it as a pod in the cluster by making a container image out of it.
-// In that case, we need to define role and rolebinding in the "default" namespace for the "default" service account.
+
+// If required, we can also run the custom controller as a pod in the cluster by making a container image out of it.
+// In that case, we need to define clusterrole and clusterrolebinding in the "default" namespace for the "default" service account.
 // e.g.
 
-// create rbac
-kubectl create role poddeploy --resource pods,deployments --verb list
+kubectl create serviceaccount -n default ccpod-sa --dry-run=client -oyaml > ccpod_sa.yaml
+kubectl create clusterrole ccpod-cr --resource=service,pod --verb=list,watch,create,get,update --dry-run=client -oyaml > ccpod_cr.yaml
+kubectl create clusterrolebinding ccpod-crb --clusterrole ccpod-cr --serviceaccount default:ccpod-sa --dry-run=client -oyaml > ccpod_crb.yaml
 
-// create role binding for above role and associate it with the "default" service account of the "default" namespace:
-kubectl create rolebinding poddep --role poddeploy --serviceaccount default:default
+kubectl create -f ccpod_sa.yaml
+kubectl create -f ccpod_cr.yaml
+kubectl create -f ccpod_crb.yaml
+
+Now, in the container spec in the pod/deployment/replicaset yaml file, specify the service account name:
+
+spec:
+  containers:
+  - image: ubuntu
+    name: ekspose
+    resources: {}
+  serviceAccountName: ccpod-sa <<<<<<<<<<<<<<<<<<<
+
 
