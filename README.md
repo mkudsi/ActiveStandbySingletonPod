@@ -143,11 +143,12 @@ kubectl create -f ccpod_crb.yaml
 Now, in the container spec in the pod/deployment/replicaset yaml file, specify the service account name:
   
 spec:
-  containers:
-  - image: ubuntu
-    name: ekspose
-    resources: {}
-  serviceAccountName: ccpod-sa <<<<<<<<<<<<<<<<<<<
+
+  containers:
+
+  - image: ubuntu
+  
+  serviceAccountName: ccpod-sa <<<<<<<<<<<<<<<<<<<
 
 
 
