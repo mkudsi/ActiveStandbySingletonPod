@@ -141,7 +141,9 @@ To run the custom controller as a pod in the cluster:
 -----------------------------------------------------
 
 kubectl create -f icr_sa.yaml
+
 kubectl create -f icr_cr.yaml
+
 kubectl create -f icr_crb.yaml
 
 kubectl create -f icr_replicaset.yaml
@@ -154,6 +156,7 @@ kubectl create -f hapod_replicaset.yaml
 Kill the critical container in the application pod:
 ---------------------------------------------------
 // After the critical container dies inside the pod, the ICR will kill the pod itself.
+
 kubectl exec -it <active-pod-name> --container critcontainer -- touch /tmp/killme
 
 
@@ -161,7 +164,9 @@ Kill the active pod:
 --------------------
 
 // Use this cmd to find the active pod: kubectl describe pods | grep -e role -e "^Name:"
+
 // Use this cmd to kill either the active application pod or the active icr pod.
+
 kubectl delete pod --force <active-pod-name> 
 
 
