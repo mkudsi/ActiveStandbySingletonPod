@@ -116,9 +116,11 @@ To build application docker images:
 -----------------------
 
 cd ActiveStandbySingletonPod/udpsrv
+
 go build // This will build the goudps binary.
 
 cd ActiveStandbySingletonPod/
+
 docker build . -t mygoudpsrv:v1 // This will create the container image and make it available in docker images on local machine.
 
 cd ActiveStandbySingletonPod/lifecyclecontainer/
