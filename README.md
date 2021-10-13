@@ -10,6 +10,8 @@ Also, want to nominate certain containers as critical containers and others as n
 If a critical container dies, then the POD needs to be restarted as the initialization of the critical POD is expected to take a lot of time and we better failover
 to the standby POD which is ready to become active.
 
+The above functionality should be implemneted as an Internal Controller (ICR) pod and the ICR pod itself should be highly available.
+There should be an active and a standby ICR pod similar to the singleton pod described above.
 
 
 Solution:
@@ -20,6 +22,9 @@ There is another POD running the same application but working in standby mode. I
 
 Since labels and annotations apply to the entire POD and not to containers within it, I am using environment variable to mark containers as critical or non-critical.
 The env variable "pwcriticality" with a value "critical" determines a critical container.
+
+An Internal Controller (ICR) POD will monitor the POD events happening in the cluster and do the label changes, pod deletion etc as mentioned above.
+A standby ICR pod will be created and it will take over the ICR funtionality if the active ICR pod dies.
 
 
 Replicaset:
@@ -41,7 +46,7 @@ A ClusterIP service is created which has the following selector criteria:
 Since both the PODs created by the replicaset have app=hapod, but role=standby, initially, the service will not find any matching pods.
 
 
-Custom Controller:
+Custom Controller (Internal Controller - ICR):
 ------------------
 The custom controller looks for POD creation and deletion events for PODs having label "app=hapod".
 When the replicaset creates the 2 PODs, the custom controller will change the label of one of them to active i.e. "role=active".
@@ -61,7 +66,7 @@ It will also send a message (used UDP socket for this purpose) to the POD to sta
 This will make the Service to select this newly active pod as backend POD and start directing traffic to it.
 
 Meanwhile, the replicaset will detect the POD going down and create a new POD to make sure there are 2 replicas always running.
-This new POD will have label role as standby.
+This new POD will have label "role" as standby.
 
 
 Steps of exection:
