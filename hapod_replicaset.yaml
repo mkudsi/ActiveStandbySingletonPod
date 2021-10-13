@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: myharset
+  labels:
+    app: myharset
+spec:
+  # modify replicas according to your case
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hapod
+  template:
+    metadata:
+      labels:
+        app: hapod
+        role: standby
+    spec:
+      containers:
+      - name: noncritcontainer
+        image: mygoudpsrv:v1
+        env:
+          - name: pwcriticality
+            value: noncritical
+        stdin: true
+        tty: true
+        command: [ "/usr/bin/goudps" ]
+        resources:
+          requests:
+            ephemeral-storage: "1Gi"
+          limits:
+            ephemeral-storage: "2Gi"
+      - name: critcontainer1
+        image: lchook:v1
+        env:
+          - name: pwcriticality
+            value: critical
+        stdin: true
+        tty: true
+      - name: noncritcontainer2
+        image: nginx
+        env:
+          - name: pwcriticality
+            value: noncritical
+        stdin: true
+        tty: true
+        resources:
+          requests:
+            ephemeral-storage: "1Gi"
+          limits:
+            ephemeral-storage: "2Gi"
+      - name: readinessprobe
+        image: busybox
+        stdin: true
+        tty: true
+        args:
+        - /bin/sh
+        - -c
+        - touch /tmp/health; sleep 10000;
+        readinessProbe:
+          exec:
+                 command:
+                 - cat
+                 - /tmp/health
+          initialDelaySeconds: 30
+          periodSeconds: 5
+
+      restartPolicy: Always

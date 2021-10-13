@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: myicrrset
+  labels:
+    app: myicrpod
+spec:
+  # modify replicas according to your case
+  replicas: 2
+  selector:
+    matchLabels:
+      app: icr
+  template:
+    metadata:
+      labels:
+        app: icr
+        role: standby
+    spec:
+      containers:
+      - name: icrcont
+        image: icr:v1
+        env:
+          - name: pwcriticality
+            value: noncritical
+          - name: MY_POD_NAME
+            valueFrom:
+               fieldRef:
+                  fieldPath: metadata.name
+        stdin: true
+        tty: true
+        command: [ "/usr/bin/icr" ]
+        resources:
+          requests:
+            ephemeral-storage: "1Gi"
+          limits:
+            ephemeral-storage: "2Gi"
+      serviceAccountName: icr-sa
+
+      restartPolicy: Always
