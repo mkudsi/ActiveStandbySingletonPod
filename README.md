@@ -56,6 +56,8 @@ Once the role label is changed to active, the Service will select that POD as ba
 
 The other POD will continue to behave as standby and will not be receiving any traffic.
 
+The Internal Controller functionality will run inside a POD, ICR Pod.
+This will be created as part of a replicaset with replicase=2.
 
 Failover:
 ---------
@@ -68,24 +70,36 @@ This will make the Service to select this newly active pod as backend POD and st
 Meanwhile, the replicaset will detect the POD going down and create a new POD to make sure there are 2 replicas always running.
 This new POD will have label "role" as standby.
 
+The ICR Pods will behave in a similar manner.
+When the 2 ICR Pods are created, the one with a lower aplhabetical Pod name will become active and will execute the ICR functionality.
+It will have a label "role" as active.
+The other ICR Pod will have label "role" as standby.
+
+When the active ICR Pod dies, the standby ICR pod will receive this notification from the apiServer and will promote itself to become
+the active ICR Pod.
 
 Steps of exection:
 ------------------
 
-We need following:
+We need the following:
 
 - Application POD with a container which listens on a UDP port to receive the "become-active" notification from custom controller.
 - The POD contains multiple containers with some of them having environment variable "pwcriticality" set to "critical". 
-- Custom controller binary (or docker image) which will run on the host (or as a POD inside the cluster).
+- ICR binary (as a docker image) will run as a POD inside the cluster.
 - Replicaset and Service yaml files with appropriate labels and selectors.
 
 
--> The replicaset and service are defined in the replicaset1.yaml and service1.yaml files.
+-> The application replicaset and service are defined in the hapod_replicaset.yaml and ha_service.yaml files.
+
+-> The ICR replicaset is defined in icr_replicaset.yaml.
+   The icr_sa.yaml, icr_cr.yaml and icr_crb.yaml define the serviceAccount, clusterRole and clusterRoleBinding needed for executing
+   the client-go functionality.
 
 -> The udp_server_go.go file contains the application code compiled into the binary "goudps".
-   This binary is then used to create a container image "mygoudpsrv:v1" as defined in the file ActiveStandbySingletonPod/Dockerfile.
+   This binary is then used to create a container image "mygoudpsrv:v1" as defined in the file ActiveStandbySingletonPod/udpsrv/Dockerfile.
 
 -> The main.go and podcontroller.go files contain the custom controller logic to manage the labels of the PODs.
+   The icr_controller.go file implements the functionality for high availability of the ICR itself.
 
 -> The lifecyclecontainer/ directory contains the executable "lifecycle" generated using the C file lifecyclehook.c.
    This program keeps looking for a file /tmp/killme every 5 seconds and crashes itself when it finds the file.
@@ -98,63 +112,36 @@ We need following:
 
 
 
-To build docker images:
+To build application docker images:
 -----------------------
 
 cd ActiveStandbySingletonPod/udpsrv
 go build // This will build the goudps binary.
 
 cd ActiveStandbySingletonPod/
-docker build . -t mygoudpsrv:v1 // This will create the container image and make it available on local machine.
+docker build . -t mygoudpsrv:v1 // This will create the container image and make it available in docker images on local machine.
 
 cd ActiveStandbySingletonPod/lifecyclecontainer/
-docker build . -t lchook:v1
+docker build . -t lchook:v1 // This will create the container image and make it available in docker images on local machine.
 
 
 To compile the custom controller binary:
 ----------------------------------------
 
-// The below command will create the binary "ccpod" in the same directory. Check file go.mod.
-
+// The below command will create the binary "icr" in the same directory. Check file go.mod.
 cd ActiveStandbySingletonPod/
-
 go build
 
-// We can then run the ./ccpod binary on the host machine itself.
-
+docker build . -t icr:v1
 
 To run the custom controller as a pod in the cluster:
 -----------------------------------------------------
 
+kubectl create -f icr_sa.yaml
+kubectl create -f icr_cr.yaml
+kubectl create -f icr_crb.yaml
 
-// If required, we can also run the custom controller as a pod in the cluster by making a container image out of it.
-// In that case, we need to define clusterrole and clusterrolebinding in the "default" namespace for the "default" service account.
-// e.g.
-
-
-kubectl create serviceaccount -n default ccpod-sa --dry-run=client -oyaml > ccpod_sa.yaml
-
-kubectl create clusterrole ccpod-cr --resource=service,pod --verb=list,watch,create,get,update --dry-run=client -oyaml > ccpod_cr.yaml
-
-kubectl create clusterrolebinding ccpod-crb --clusterrole ccpod-cr --serviceaccount default:ccpod-sa --dry-run=client -oyaml > ccpod_crb.yaml
-
-
-kubectl create -f ccpod_sa.yaml
-
-kubectl create -f ccpod_cr.yaml
-
-kubectl create -f ccpod_crb.yaml
-
-Now, in the container spec in the pod/deployment/replicaset yaml file, specify the service account name:
-  
-spec:
-
-  containers:
-
-  - image: ubuntu
-  
-
-  serviceAccountName: ccpod-sa <<<<<<<<<<<<<<<<<<<
+kubectl create -f icr_replicaset.yaml
 
 
 
