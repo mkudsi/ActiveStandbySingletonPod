@@ -2,7 +2,7 @@
 
 AIM:
 ----
-To create a singleton active POD which has a passive (not receiving/handling any traffic) standby POD which is ready to become active once the active POD goes down.
+To create a singleton active POD and a passive (not receiving/handling any traffic) standby POD which is ready to become active once the active POD goes down.
 Due to time critical functionality being executed in the active POD, can't rely on K8s to create a new POD and get the application initialization done within milliseconds. 
 Hence, need to keep a standby POD ready beforehand so that the failover happens quite fast.
 
