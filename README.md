@@ -17,6 +17,9 @@ There should be an active and a standby ICR pod similar to the singleton pod des
 Solution:
 ---------
 
+
+![image](https://user-images.githubusercontent.com/74852023/150067637-8635a723-e775-47d1-95a8-4fd473bcaa5d.png)
+
 The application is running as a singleton POD and is actively receiving traffic via a ClusterIP service.
 There is another POD running the same application but working in standby mode. It is not receiving any traffic as it is not a backend pod of the service.
 
